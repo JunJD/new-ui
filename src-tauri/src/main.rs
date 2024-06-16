@@ -1,3 +1,8 @@
+#![cfg_attr(
+    all(not(debug_assertions), target_os = "windows"),
+    windows_subsystem = "windows"
+)]
+
 use std::fs::OpenOptions;
 use std::io::Write;
 use std::path::PathBuf;
@@ -93,6 +98,8 @@ async fn find_valid_electro_car_by_ids(array: Vec<String>, app_handle: AppHandle
 
     Ok(paths)
 }
+
+
 
 fn main() {
     // 创建 Tauri 应用程序

@@ -5,6 +5,8 @@
         "resove",
         "Talwind",
         "unoptimized",
-        "usercode"
+        "usercode",
+        "winapi",
+        "winbase"
     ]
 }
