@@ -9,7 +9,7 @@ export default function Home() {
         content: 'This is a test',
         times: 10
       });
-      console.log('All test writes completed. Paths:', paths);
+      console.log('All writes completed. Paths:', paths);
     } catch (error) {
       console.error('Error writing to file:', error);
     }
