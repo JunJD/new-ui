@@ -1,5 +1,6 @@
 "use client"
 
+import appStorage from "@/utils/appStorage";
 import { createContext, useState } from "react"
 
 export const AuthContext = createContext<
@@ -17,10 +18,10 @@ export default function AuthProvider({
 }: Readonly<{
     children: React.ReactNode;
 }>) {
-    const [token, setToken] = useState<string>(window.localStorage.getItem("token") || "")
+    const [token, setToken] = useState<string>(appStorage.getItem("token") || "")
 
     function _setToken (token: string) {
-        window.localStorage.setItem("token", token)
+        appStorage.setItem("token", token)
         setToken(token)
     }
     
