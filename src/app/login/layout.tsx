@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import AuthProvider from "@/provider/AuthProvider";
-import { Suspense } from 'react'
+// import { Suspense } from 'react'
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
@@ -18,9 +18,9 @@ export default function LoginLayout({
     <html lang="en">
       <body className={inter.className}>
         <AuthProvider>
-          <Suspense>
+
             {children}
-          </Suspense>
+
         </AuthProvider>
       </body>
     </html>
