@@ -1,15 +1,19 @@
 "use client"
 
 import AuthGuards from "./guards/AuthGuards"
-import React, { useContext } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import * as Tabs from '@radix-ui/react-tabs';
 import { AuthContext } from "@/provider/AuthProvider";
 import SearchFilterFrameNumber from "./components/SearchFilterFrameNumber";
 
 const HomePage = () => {
+    const [mounted, setMounted] = useState(false);
     const { token } = useContext(AuthContext)
+    useEffect(() => {
+        setMounted(true);
+    }, [])
     return (
-        <AuthGuards>
+        mounted && <AuthGuards>
             <Tabs.Root
                 className="flex flex-col w-[100%] h-[100vh] border-none"
                 defaultValue="tab1"
@@ -39,7 +43,7 @@ const HomePage = () => {
                     className="grow p-5 bg-white rounded-b-md outline-none focus:shadow-[0_0_0_2px] focus:shadow-black overflow-y-hidden"
                     value="tab1"
                 >
-                   <SearchFilterFrameNumber/>
+                    <SearchFilterFrameNumber />
                 </Tabs.Content>
                 <Tabs.Content
                     className="grow p-5 bg-white rounded-b-md outline-none focus:shadow-[0_0_0_2px] focus:shadow-black"
