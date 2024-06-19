@@ -1,61 +1,82 @@
 "use client"
-
+import { toast } from 'react-hot-toast'
 import { AuthContext } from "@/provider/AuthProvider"
 import { useContext, useState, useEffect, useRef, useCallback, ChangeEvent } from "react"
 import * as Form from '@radix-ui/react-form';
 import * as ScrollArea from '@radix-ui/react-scroll-area';
+import { delay, incrementAlphaNumericString, incrementAlphaString, incrementNumberString } from "@/utils/fetch";
 
-const incrementString = (str: string) => {
-    let arr = str.split('').reverse();
-    for (let i = 0; i < arr.length; i++) {
-        if (arr[i] === 'z') {
-            arr[i] = 'a';
-        } else {
-            arr[i] = String.fromCharCode(arr[i].charCodeAt(0) + 1);
-            return arr.reverse().join('');
-        }
-    }
-    arr.push('a');
-    return arr.reverse().join('');
-};
-let currentString = 'aaaa';
-const TAGS = Array.from({ length: 50000 }).map((_, i, a) => {
-    currentString = incrementString(currentString);
-    return {
-        value: `MA3NGRYGAB482422${currentString}2206270022`,
-        flag: i % 2 === 0 ? "1" : "0", // 1有效 0无效
-    }
-});
 const PAGE_SIZE = 100;  // 每次加载的标签数
+
+interface listItem {
+    value: string,
+    status: string,
+    batteryModel?: string, //电池型号
+    batteryType?: string, // 电池类型
+    BFNorOE?: string, // 电池品牌
+    brand?: string //中文品牌
+}
 
 export default function SearchFilterFrameNumber() {
     const { token } = useContext(AuthContext);
-    const [loadedTags, setLoadedTags] = useState(TAGS.slice(0, PAGE_SIZE));
+    const listRef = useRef<Array<listItem>>([]);
+    const [loadedTags, setLoadedTags] = useState<Array<listItem>>([]);
     const loadMoreRef = useRef(null);
 
     const [isGarbled, setIsGarbled] = useState('1');
     const [startComplement, setStartComplement] = useState('0000');
-    const [startPosition, setStartPosition] = useState('1');
+    const [startPosition, setStartPosition] = useState("");
     const [carNumber, setCarNumber] = useState('');
 
     const handleStartPosition = (value: string) => {
-        if (isNaN(+value)) return;
-        setStartPosition(value);
+        const num = +value
+        // 非数字
+
+        setStartComplement('');
         setCarNumber(prev => {
-            // 清除空格
             const fixV = prev.replace(/\s/g, '');
             // 计算新的空格
-            const newSpace = +value;
+            const newSpace = num;
+            if (newSpace <= fixV.length) {
+                setStartPosition((num === 0 ? '' : num) + '');
+                // 在startPosition位置处补上空格
+                const newCarNumber = fixV.slice(0, newSpace) + ' ' + fixV.slice(newSpace);
 
-            // 在startPosition位置处补上空格
-            const newCarNumber = fixV.slice(0, newSpace) + ' ' + fixV.slice(newSpace);
-
-            // 返回新的车牌号
-            return newCarNumber;
+                // 返回新的车牌号
+                return newCarNumber;
+            } else {
+                return prev
+            }
         })
     }
-    const handleStartComplement = (value: string) => {
+    const handleStartComplement = (value: string, _isGarbled = isGarbled) => {
+        console.log(value, 'value')
+        if (_isGarbled === "1") {
+            // 校验是否为纯数字
+            const regex = /^\d+$/;
+            if (!regex.test(value)) {
+                toast.error('请输入纯数字');
+                return;
+            }
+        }
 
+        if (_isGarbled === "2") {
+            // 校验是否为纯字母
+            const regex = /^[a-zA-Z]+$/;
+            if (!regex.test(value)) {
+                toast.error('请输入纯字母');
+                return;
+            }
+        }
+
+        if (_isGarbled === "3") {
+            // 校验是否为纯字母数字
+            const regex = /^[a-zA-Z0-9]+$/;
+            if (!regex.test(value)) {
+                toast.error('请输入纯字母数字');
+                return;
+            }
+        }
 
         setCarNumber(prev => {
             // 跳过第一个空格并在startComplement.length 位置处补上第二个空格
@@ -78,31 +99,97 @@ export default function SearchFilterFrameNumber() {
     }
 
     const handleSelectChange = (event: ChangeEvent<HTMLSelectElement>) => {
+
         const value = event.target.value;
-        console.log(event, value, 'event')
-        console.log(value === '2');
         setIsGarbled(value);
-        if (value === '2') {
-            console.log('11111===11=1=1=')
-            setStartComplement('aaaa');
-        } else {
-            console.log('1222222==1222222=')
-            setStartComplement('0000');
-        }
+        setTimeout(() => {
+            if (value === '2') {
+                handleStartComplement('aaaa', value);
+            } else if (value === "1") {
+                handleStartComplement('0000', value);
+            }
+        });
     };
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         const form = e.currentTarget;
         const formData = new FormData(form);
-        const carNumber = formData.get('carNumber');
-        const carBrand = formData.get('carBrand');
-        console.log(carNumber, 'carNumber', carBrand, 'carBrand')
+        const carNumber = formData.get('carNumber') as string;
+        const isGarbled = formData.get('isGarbled') as string;
+        const startComplement = formData.get('startComplement') as string;
+        const startPosition = formData.get('startPosition') as string;
+        const exhaustiveQuantity = formData.get('exhaustiveQuantity') as string;
+
+        if (!exhaustiveQuantity) {
+            toast.error('请输入 exhaustiveQuantity');
+            return
+        }
+        if (!carNumber) {
+            toast.error('请输入 carNumber');
+            return
+        }
+        if (!startPosition) {
+            toast.error('请输入 startPosition');
+            return
+        }
+
+        let currentString = startComplement;
+        console.log(startComplement, currentString, '<==')
+        const list = Array.from({ length: Number(exhaustiveQuantity) }).fill(0).map((_, index) => {
+            const leftV = carNumber?.slice(0, Number(startPosition) + 1).replace(/\s/g, '');
+            const rightV = carNumber?.slice(Number(startPosition) + 1 + startComplement.length).replace(/\s/g, '');
+            switch (isGarbled) {
+                case "1":
+                    currentString = incrementNumberString(currentString)
+                    break;
+                case "2":
+                    currentString = incrementAlphaString(currentString)
+                    break;
+                default:
+                    currentString = incrementAlphaNumericString(currentString);
+                    break;
+            }
+            console.log(rightV, currentString, leftV, '===')
+            return `${leftV}${currentString}${rightV}`
+        })
+
+        for (const item of list) {
+            const response = await fetch('/api/getCarNum', {
+                method: "POST",
+                body: JSON.stringify({ token, cjhurl: `https://www.pzcode.cn/vin/${item}` }),
+            })
+            const result = await response.json()
+            const { code, data } = result
+            if (code === 0) {
+                listRef.current.push({
+                    value: item,
+                    status: 'success',
+                    batteryModel: data.dcxh,
+                    batteryType: data.dclx,
+                    BFNorOE: data.dcpp,
+                    brand: data.zwpp
+                })
+            } else {
+                listRef.current.push({
+                    value: item,
+                    status: 'error'
+                })
+            }
+
+            if (PAGE_SIZE > listRef.current.length) {
+                loadMoreTags()
+            }
+            scrollBottom()
+        }
+
+
     }
 
     const loadMoreTags = useCallback(() => {
+
         setLoadedTags(prevTags => {
-            const nextTags = TAGS.slice(prevTags.length, prevTags.length + PAGE_SIZE);
+            const nextTags = listRef.current.slice(prevTags.length, prevTags.length + PAGE_SIZE);
             return [...prevTags, ...nextTags];
         });
     }, []);
@@ -126,6 +213,16 @@ export default function SearchFilterFrameNumber() {
         };
     }, [loadMoreTags]);
 
+    const viewportRef = useRef<HTMLDivElement>(null);
+
+    function scrollBottom() {
+        requestAnimationFrame(() => {
+            if (viewportRef.current) {
+                viewportRef.current.scrollTop = viewportRef.current!.scrollHeight;
+            }
+        })
+    }
+
     return (
         <div className="flex flex-col gap-[10px] w-[100%] h-[100%]">
             <Form.Root className="w-[100%] text-gray-800" onSubmit={handleSubmit}>
@@ -145,8 +242,8 @@ export default function SearchFilterFrameNumber() {
                                 value={carNumber}
                                 onChange={(e) => {
                                     setCarNumber(e.target.value)
-                                    handleStartPosition(startPosition)
-                                    handleStartComplement(startComplement)
+                                    handleStartPosition("")
+                                    handleStartComplement('')
                                 }}
                             />
                         </Form.Control>
@@ -167,26 +264,32 @@ export default function SearchFilterFrameNumber() {
                     <Form.Field className="grid mb-[10px] w-[100%]" name="startPosition">
                         <div className="flex items-baseline justify-between">
                             <Form.Label className="text-[12px] font-medium leading-[25px] ">截取开始位置</Form.Label>
+                            <Form.Message className="text-[13px]  opacity-[0.8]" match="valueMissing">
+                                不能为空
+                            </Form.Message>
                         </div>
                         <Form.Control asChild>
                             <input
                                 className="box-border w-full bg-blackA2 shadow-blackA6 inline-flex h-[35px] appearance-none items-center justify-center rounded-[4px] px-[10px] text-[12px] leading-none  shadow-[0_0_0_1px] outline-none hover:shadow-[0_0_0_1px_black] focus:shadow-[0_0_0_2px_black] selection:color-white selection:bg-blackA6"
                                 placeholder="请输入截取开始位置"
+                                type='number'
+                                required
                                 value={startPosition} onChange={(e) => handleStartPosition(e.target.value)}
                             />
                         </Form.Control>
                     </Form.Field>
-                    <Form.Field className="grid mb-[10px] w-[100%]" name="isGarbled" value={isGarbled} onChange={handleSelectChange}>
+                    <Form.Field className="grid mb-[10px] w-[100%]" name="isGarbled" >
                         <div className="flex items-baseline justify-between">
                             <Form.Label className="text-[12px] font-medium leading-[25px] ">乱码还是顺码</Form.Label>
                         </div>
                         <Form.Control asChild >
                             <select
                                 className="box-border w-full bg-blackA2 shadow-blackA6 inline-flex h-[35px] appearance-none items-center justify-center rounded-[4px] px-[10px] text-[12px] leading-none  shadow-[0_0_0_1px] outline-none hover:shadow-[0_0_0_1px_black] focus:shadow-[0_0_0_2px_black] selection:color-white selection:bg-blackA6"
-
+                                value={isGarbled} onInput={handleSelectChange}
                             >
                                 <option value="1">顺码</option>
                                 <option value="2">乱码</option>
+                                <option value="3">随机</option>
 
                             </select>
                         </Form.Control>
@@ -194,19 +297,25 @@ export default function SearchFilterFrameNumber() {
                     <Form.Field className="grid mb-[10px] w-[100%]" name="startComplement">
                         <div className="flex items-baseline justify-between">
                             <Form.Label className="text-[12px] font-medium leading-[25px] ">起始补充码</Form.Label>
+                            <Form.Message className="text-[13px]  opacity-[0.8]" match="valueMissing">
+                                不能为空
+                            </Form.Message>
                         </div>
                         <Form.Control asChild >
                             <input
                                 className="box-border w-full bg-blackA2 shadow-blackA6 inline-flex h-[35px] appearance-none items-center justify-center rounded-[4px] px-[10px] text-[12px] leading-none  shadow-[0_0_0_1px] outline-none hover:shadow-[0_0_0_1px_black] focus:shadow-[0_0_0_2px_black] selection:color-white selection:bg-blackA6"
                                 placeholder="请输入"
+                                required
                                 value={startComplement} onChange={(e) => handleStartComplement(e.target.value)}
-
                             />
                         </Form.Control>
                     </Form.Field>
                     <Form.Field className="grid mb-[10px] w-[100%]" name="exhaustiveQuantity">
                         <div className="flex items-baseline justify-between">
                             <Form.Label className="text-[12px] font-medium leading-[25px] ">穷举数量</Form.Label>
+                            <Form.Message className="text-[13px]  opacity-[0.8]" match="valueMissing">
+                                不能为空
+                            </Form.Message>
                         </div>
                         <Form.Control asChild>
                             <input
@@ -214,6 +323,8 @@ export default function SearchFilterFrameNumber() {
                                 type="number"
                                 min={0}
                                 max={300000}
+                                defaultValue={30}
+                                required
                                 placeholder="请输入"
                             />
                         </Form.Control>
@@ -226,17 +337,31 @@ export default function SearchFilterFrameNumber() {
                     </button>
                 </Form.Submit>
             </Form.Root>
+
             <ScrollArea.Root className="w-[100%] flex flex-1 rounded overflow-hidden shadow-[0_2px_10px] shadow-blackA4 bg-white">
-                <ScrollArea.Viewport className="w-full h-full rounded">
+                <ScrollArea.Viewport ref={viewportRef} className="w-full h-full rounded">
                     <div className="py-[15px] px-5">
-                        <div className="text-violet11 text-[12px] leading-[18px] font-medium">过滤车架号</div>
+                        <div className="text-violet11 text-[12px] leading-[18px] font-medium">
+                            <div>过滤车架号</div>
+                        </div>
                         {loadedTags.map((tag) => (
                             <div
                                 className="text-mauve12 text-[13px] leading-[18px] mt-2.5 pt-2.5 border-t border-t-mauve6 flex flex-row"
                                 key={tag.value}
                             >
-                                <div>{tag.value}</div>
-                                <div>---------------------------{tag.flag === "1" ? "已使用" : "未使用"}</div>
+                                <div>【车架号：{tag.value}】</div>
+                                <div>---------------------------{tag.status === "success" ? "有效" : "无效"}</div>
+                                {
+                                    tag.status === "success" &&
+                                    (
+                                        <span>
+                                            <span>【电池型号：{tag.batteryModel}】</span>
+                                            <span>【电池类型：{tag.batteryType}】</span>
+                                            <span>【中文品牌：{tag.brand}】</span>
+                                            <span>【电池品牌：{tag.BFNorOE}】</span>
+                                        </span>
+                                    )
+                                }
                             </div>
                         ))}
                         <div ref={loadMoreRef}></div>
