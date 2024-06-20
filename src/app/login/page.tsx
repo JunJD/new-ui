@@ -26,7 +26,7 @@ const LoginPage = () => {
             })
             const result = await response.json()
             if (result.code === 0) {
-                router.push(redirect || '/')
+                router.push((redirect || '/') + '?searchToken=' + result.data)
                 setToken(result.data)
             }
         }

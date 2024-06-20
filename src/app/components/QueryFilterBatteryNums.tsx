@@ -10,12 +10,13 @@ import { listen } from '@tauri-apps/api/event';
 const PAGE_SIZE = 100;  // 每次加载的标签数
 
 interface listItem {
-    value: string,
+    value: string, // qydcbm
     status: string,
-    battery_model?: string, //电池型号
-    battery_type?: string, // 电池类型
-    bfn_or_oe?: string, // 电池品牌
-    brand?: string //中文品牌
+    battery_model?: string, //电池型号 dcxh
+    battery_type?: string, // 电池类型 dclx
+    bfn_or_oe?: string, // 电池品牌 // dcpp
+    brand?: string //电池生产企业 dcscqy
+    // dcrl 电池容量
 }
 
 export default function SearchFilterFrameNumber() {
@@ -36,7 +37,7 @@ export default function SearchFilterFrameNumber() {
                 _effectRef.current();
             }
 
-            _effectRef.current = await listen<listItem>('updateList', (event) => {
+            _effectRef.current = await listen<listItem>('updateBatteryInfoList', (event) => {
                 
                 if (!event.payload) {
                     return;
@@ -92,7 +93,7 @@ export default function SearchFilterFrameNumber() {
                 // 在startPosition位置处补上空格
                 const newCarNumber = fixV.slice(0, newSpace) + ' ' + fixV.slice(newSpace);
 
-                // 返回新的车牌号
+                // 返回新的电池码
                 return newCarNumber;
             } else {
                 return prev
@@ -143,7 +144,7 @@ export default function SearchFilterFrameNumber() {
 
             const newCarNumber = prev.slice(0, endIndex) + ' ' + newEndValue;
 
-            // 返回新的车牌号
+            // 返回新的电池码
             return newCarNumber
         })
     }
@@ -205,10 +206,10 @@ export default function SearchFilterFrameNumber() {
                     currentString = incrementAlphaNumericString(currentString);
                     break;
             }
-            return `https://www.pzcode.cn/vin/${leftV}${currentString}${rightV}`
+            return `https://www.pzcode.cn/pwb/${leftV}${currentString}${rightV}`
         })
         setCancelled(true)
-        await invoke('find_valid_electro_car_by_ids', {
+        await invoke('find_battery_nums_by_ids', {
             array: list,
             token
         });
@@ -261,16 +262,16 @@ export default function SearchFilterFrameNumber() {
                 <div className="flex flex-row gap-10 w-[100%]">
                     <Form.Field className="grid mb-[10px] w-[100%]" name="carNumber">
                         <div className="flex items-baseline justify-between">
-                            <Form.Label className="text-[12px] font-medium leading-[25px] ">车架号</Form.Label>
+                            <Form.Label className="text-[12px] font-medium leading-[25px] ">电池码</Form.Label>
                             <Form.Message className="text-[13px]  opacity-[0.8]" match="valueMissing">
-                                请输入原始车架号
+                                请输入原始电池码
                             </Form.Message>
                         </div>
                         <Form.Control asChild>
                             <input
                                 className="box-border w-full bg-blackA2 shadow-blackA6 inline-flex h-[35px] appearance-none items-center justify-center rounded-[4px] px-[10px] text-[12px] leading-none  shadow-[0_0_0_1px] outline-none hover:shadow-[0_0_0_1px_black] focus:shadow-[0_0_0_2px_black] selection:color-white selection:bg-blackA6"
                                 required
-                                placeholder="请输入原始车架号"
+                                placeholder="请输入原始电池码"
                                 value={carNumber}
                                 onChange={(e) => {
                                     setCarNumber(e.target.value)
@@ -282,12 +283,12 @@ export default function SearchFilterFrameNumber() {
                     </Form.Field>
                     <Form.Field className="grid mb-[10px] w-[100%]" name="carBrand">
                         <div className="flex items-baseline justify-between">
-                            <Form.Label className="text-[12px] font-medium leading-[25px] ">车辆品牌筛选</Form.Label>
+                            <Form.Label className="text-[12px] font-medium leading-[25px] ">电池品牌筛选</Form.Label>
                         </div>
                         <Form.Control asChild>
                             <input
                                 className="box-border w-full bg-blackA2 shadow-blackA6 inline-flex h-[35px] appearance-none items-center justify-center rounded-[4px] px-[10px] text-[12px] leading-none  shadow-[0_0_0_1px] outline-none hover:shadow-[0_0_0_1px_black] focus:shadow-[0_0_0_2px_black] selection:color-white selection:bg-blackA6"
-                                placeholder="请输入车辆品牌,如果不填写则不筛选品牌"
+                                placeholder="请输入电池品牌,如果不填写则不筛选品牌"
                             />
                         </Form.Control>
                     </Form.Field>
@@ -374,14 +375,14 @@ export default function SearchFilterFrameNumber() {
                 <ScrollArea.Viewport ref={viewportRef} className="w-full h-full rounded">
                     <div className="py-[15px] px-5">
                         <div className="text-violet11 text-[12px] leading-[18px] font-medium">
-                            <div>过滤车架号</div>
+                            <div>过滤电池码</div>
                         </div>
                         {loadedTags.map((tag) => (
                             <div
                                 className="text-mauve12 text-[13px] leading-[18px] mt-2.5 pt-2.5 border-t border-t-mauve6 flex flex-row"
                                 key={tag.value}
                             >
-                                <div>【车架号：{tag.value}】</div>
+                                <div>【电池码：{tag.value}】</div>
                                 <div>---------------------------{tag.status === "success" ? "有效" : "无效"}</div>
                                 {
                                     tag.status === "success" &&
