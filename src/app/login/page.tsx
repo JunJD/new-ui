@@ -20,7 +20,7 @@ const LoginPage = () => {
         // 计算MD5哈希值
         const md5Hash = CryptoJS.createHash('md5').update(password as string).digest('hex');
         if (usercode && password) {
-            const response = await fetch('https://autocarandbattery.dingjunjie.com/api/login', {
+            const response = await fetch('/api/login', {
                 method: "POST",
                 body: JSON.stringify({ usercode, password: md5Hash }),
             })
