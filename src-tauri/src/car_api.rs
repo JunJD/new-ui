@@ -24,7 +24,7 @@ pub mod car_api {
 
     pub async fn fetch_car_number(token: &str, _url: &str) -> Result<ResponseData> {
         let client = Client::new();
-        let url = "http://localhost:3000/api/getCarNum";
+        let url = "https://autocarandbattery.dingjunjie.com/api/getCarNum";
         let body = RequestBody {
             token: token.to_string(),
             cjhurl: format!("{}", _url),
@@ -46,7 +46,7 @@ pub mod car_api {
 
     pub async fn fetch_battery_number(token: &str, _url: &str) -> Result<ResponseData> {
         let client = Client::new();
-        let url = "http://localhost:3000/api/getBatteryInfo";
+        let url = "https://autocarandbattery.dingjunjie.com/api/getBatteryInfo";
         let body = RequestBodyForBattery {
             token: token.to_string(),
             dcbhurl: format!("{}", _url),

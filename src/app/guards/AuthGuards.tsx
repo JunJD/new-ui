@@ -26,14 +26,14 @@ const AuthGuard = ({
     async function verify () {
         const response = await fetch('/api/getBatteryInfo', {
             method: "POST",
-            body: JSON.stringify({ token: token || searchToken || "mphy_token_0573_de03c0b700314d6193fb5aea9081ce4d", dcbhurl: "https%3A%2F%2Fwww.pzcode.cn%2Fpwb%2F7490121130102CHENHAICHI120122" }),
+            body: JSON.stringify({ token: token || searchToken, dcbhurl: "https%3A%2F%2Fwww.pzcode.cn%2Fpwb%2F7490121130102CHENHAICHI120122" }),
         })
         const result = await response.json()
         if (result.code === 2) {
             setToken('')
             return false
         } else {
-            setToken(searchToken as string || "mphy_token_0573_de03c0b700314d6193fb5aea9081ce4d")
+            setToken(searchToken as string)
             return true
         }
     }
